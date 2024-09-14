@@ -1,5 +1,5 @@
-h1 id="chatlog-magician-for-gta-world">GTA World聊天日志魔法师</h1>
-<p>这是一个<strong>重制版</strong>的<a href="https://github.com/ulasbayraktar/chatlog-magician">原始聊天日志魔法师</a>项目，旨在将SA-MP日志转换为图像，使截图编辑更加便捷。它与SA-MP完全兼容。</p>
+h1 id="chatlog-magician-for-gta-world">GTA World聊天日志魔术师</h1>
+<p>这是一个<strong>重制版</strong>的<a href="https://github.com/ulasbayraktar/chatlog-magician">原始聊天日志魔术师</a>项目，旨在将SA-MP日志转换为图像，使截图编辑更加便捷。它与SA-MP完全兼容。</p>
 <h3 id="features">功能</h3>
 <ul>
 <li>响应式设计：此版本使用Foundation Framework，而非Bootstrap。</li>
@@ -16,4 +16,4 @@ h1 id="chatlog-magician-for-gta-world">GTA World聊天日志魔法师</h1>
 <h2 id="examples">示例</h2>
 <pre><code>* Blanco 自己挖掉了眼睛，因为 <span class="hljs-keyword">脚本</span> 即使经过 <span class="hljs-number">5</span> 小时 <span class="hljs-keyword">调试</span> 仍然无法工作。
 
-眼睛 <span class="hljs-keyword">在</span> <span class="hljs-keyword">地板上</span> 疯狂地四处张望。 ((Blanco))* </code></pre><p><img src="https://i.imgur.com/1C3xxWn.png" alt="image" width="1500"> <img src="https://i.imgur.com/OwxEk9F.png=x250" alt="image" width="1500"></p> <pre><code>Person A 说（手机）：你好！ !Person B 说（手机）：你好，来自另一边！ </code></pre><p><img src="https://i.imgur.com/lvUtPsl.png" alt="image" width="1500"></p> <hr> <h4 id="credits">鸣谢</h4> <p><a href="https://github.com/ulasbayraktar">@Ulaş Eren Bayraktar</a> 原LS-RP聊天日志魔法师的创造者</p> <p><a href="https://forum.gta.world/en/topic/130134-guide-dude-man-template-photoshop-template-with-various-rp-lines-and-colors/">@Jax</a> 创建了我用来制作着色和格式逻辑的模板</p>
+眼睛 <span class="hljs-keyword">在</span> <span class="hljs-keyword">地板上</span> 疯狂地四处张望。 ((Blanco))* </code></pre><p><img src="https://i.imgur.com/1C3xxWn.png" alt="image" width="1500"> <img src="https://i.imgur.com/OwxEk9F.png=x250" alt="image" width="1500"></p> <pre><code>Person A 说（手机）：你好！ !Person B 说（手机）：你好，来自另一边！ </code></pre><p><img src="https://i.imgur.com/lvUtPsl.png" alt="image" width="1500"></p> <hr> <h4 id="credits">鸣谢</h4> <p><a href="https://github.com/ulasbayraktar">@Ulaş Eren Bayraktar</a> 原LS-RP聊天日志魔术师的创造者</p> <p><a href="https://forum.gta.world/en/topic/130134-guide-dude-man-template-photoshop-template-with-various-rp-lines-and-colors/">@Jax</a> 创建了我用来制作着色和格式逻辑的模板</p>
