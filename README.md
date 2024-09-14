@@ -1,4 +1,4 @@
-h1 id="chatlog-magician-for-gta-world">GTA World聊天日志魔术师</h1>
+<h1 id="chatlog-magician-for-gta-world">GTA World聊天日志魔术师</h1>
 <p>这是一个<strong>重制版</strong>的<a href="https://github.com/ulasbayraktar/chatlog-magician">原始聊天日志魔术师</a>项目，旨在将SA-MP日志转换为图像，使截图编辑更加便捷。它与SA-MP完全兼容。</p>
 <h3 id="features">功能</h3>
 <ul>
