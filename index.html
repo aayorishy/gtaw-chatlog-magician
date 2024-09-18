@@ -8,9 +8,9 @@
     <meta name="modified by" content="blanco" />
     <meta name="description" content="Chatlog Magician for GTA World" />
     <meta name="keywords" content="GTAW, GTAWorld, GTA World, RAGE MP, chatlog magician, chatlog, magician" />
-    <title>聊天记录魔术师</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/css/foundation.min.css" />
-    <link href="css/app.css" rel="stylesheet" />
+    <title>GTAW 聊天记录魔术师</title>
+    <link rel="stylesheet" href="css/foundation.min.css" />
+    <link rel="stylesheet" href="css/app.css"/>
     <link rel="icon" href="favicon.png" />
     <style>
       label {
@@ -32,6 +32,16 @@
     </style>
   </head>
   <body>
+          <svg xmlns='http://www.w3.org/2000/svg'>
+        <filter id="pixelate-filter" x="0" y="0" height="100%" width="100%"> 
+        <feOffset dx="0" dy="0" result="box-blur" />
+          <feFlood x="1" y="1" height="1" width="1"/>
+          <feComposite width='3' height='3'/>
+          <feTile result='tiles'/>
+          <feComposite in='box-blur' operator='in'/>
+          <feMorphology operator='dilate' radius='1'/>
+      </filter>
+    </svg>
     <div class="grid-container">
       <!-- 主要内容 -->
       <div class="grid-x grid-margin-x">
@@ -57,14 +67,16 @@
           <div class="textarea-container">
             <textarea id="chatlogInput" class="form-control textarea-input" rows="15" placeholder="在这里插入你的聊天记录..."></textarea>
             <div class="logo-overlay">
-              <img src="logo.png" alt="Logo" />
+              <img src="logo.png" alt="Logo" loading="lazy" />
             </div>
           </div>
           <!-- 按钮组和高分辨率切换 -->
           <div class="grid-x grid-margin-x align-middle">
             <div class="cell auto">
               <button id="downloadOutputTransparent" class="button success"> 下载图片 </button>
-              <button id="toggleBackground" class="button secondary"> 隐藏背景 </button>
+              <button id="toggleBackground" class="button secondary"> 切换背景 </button>
+              <button id="toggleCensorship" class="button"> 切换审查 </button>
+              <button id="toggleCensorshipStyle" class="button"> 切换审查风格 </button>
             </div>
             <div class="cell shrink">
               <div class="switch large">
@@ -82,8 +94,8 @@
       </div>
     </div>
     <!-- 插件 -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/js/foundation.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/foundation.min.js"></script>
     <script>
       $(document).foundation();
     </script>
@@ -204,9 +216,9 @@
         $("#output").toggleClass("background-active");
       });
     </script>
-    <script src="js/parse-text.js"></script>
-    <script src="js/chat.js"></script>
-    <script src="js/color-picker.js"></script>
-    <script src="js/chatlog-parser.js"></script>
+    <script src="https://ulife.ink/gtaw-chatlog/js/parse-text.js"></script>
+    <script src="https://ulife.ink/gtaw-chatlog/js/chat.js"></script>
+    <script src="https://ulife.ink/gtaw-chatlog/js/color-picker.js"></script>
+    <script src="https://ulife.ink/gtaw-chatlog/js/chatlog-parser.js"></script>
   </body>
 </html>

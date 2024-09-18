@@ -1,11 +1,17 @@
-$(document).ready(function () {
+﻿$(document).ready(function () {
   let applyBackground = false;
+  let applyCensorship = false; // State for censorship
+  let censorshipStyle = 'pixelated'; // 'blurred' or 'hidden'
   let characterName = "";
   const $textarea = $("#chatlogInput");
   const $output = $("#output");
   const $toggleBackgroundBtn = $("#toggleBackground");
+  const $toggleCensorshipBtn = $("#toggleCensorship"); // Censor Button
+  const $toggleCensorshipStyleBtn = $("#toggleCensorshipStyle"); // Censorship Style Toggle
 
   $toggleBackgroundBtn.click(toggleBackground);
+  $toggleCensorshipBtn.click(toggleCensorship); // Handle Censor Button Click
+  $toggleCensorshipStyleBtn.click(toggleCensorshipStyle); // Handle Censorship Style Toggle
 
   function toggleBackground() {
     applyBackground = !applyBackground;
@@ -15,6 +21,20 @@ $(document).ready(function () {
       .toggleClass("btn-dark", applyBackground)
       .toggleClass("btn-outline-dark", !applyBackground);
 
+    processOutput();
+  }
+
+  function toggleCensorship() {
+    applyCensorship = !applyCensorship;
+    $toggleCensorshipBtn
+      .toggleClass("btn-dark", applyCensorship)
+      .toggleClass("btn-outline-dark", !applyCensorship);
+    processOutput();
+  }
+
+  function toggleCensorshipStyle() {
+    censorshipStyle = (censorshipStyle === '像素化') ? '隐藏' : '像素化';
+    $toggleCensorshipStyleBtn.text(`审查风格: ${censorshipStyle.charAt(0).toUpperCase() + censorshipStyle.slice(1)}`);
     processOutput();
   }
 
@@ -59,21 +79,84 @@ $(document).ready(function () {
     const chatText = $textarea.val();
     const chatLines = chatText.split("\n").map(removeTimestamps);
     let fragment = document.createDocumentFragment();
-
+  
     chatLines.forEach((line) => {
       const div = document.createElement("div");
       div.className = "generated";
-      div.innerHTML = addLineBreaksAndHandleSpans(formatLineWithFilter(line));
+  
+      // Apply formatting first
+      let formattedLine = formatLineWithFilter(line);
+  
+      // Then apply censorship
+      if (applyCensorship) {
+        formattedLine = applyCensorshipToLine(formattedLine, line);
+      }
+  
+      div.innerHTML = addLineBreaksAndHandleSpans(formattedLine);
       fragment.appendChild(div);
-
+  
       const clearDiv = document.createElement("div");
       clearDiv.className = "clear";
       fragment.appendChild(clearDiv);
     });
-
+  
     $output.html('');
     $output.append(fragment);
     cleanUp();
+  }
+
+  function applyCensorshipToLine(formattedLine, originalLine) {
+    const exclusionPatterns = [
+      /\[S:\s*\d+\s*\|\s*CH:.*\]/,
+      /\[\d{2}\/[A-Z]{3}\/\d{4}\]/,
+      /intercom/i
+    ];
+
+    if (exclusionPatterns.some((pattern) => pattern.test(originalLine))) {
+      return formattedLine;
+    }
+
+    const censorshipRules = [
+      {
+        regex: /\$\d+(?:,\d{3})*\.\d{1,3}/g, // Matches $123.456, $1,234.56
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /\[\$\d+(?:,\d{3})*\.\d{1,3}\]/g, // Matches [$123.456], [$1,234.56]
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /\$\d+(?:,\d{3})*(?:\.\d{1,3})?/g, // Matches $500, $10,584, $123.456
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /\(\d+(g)?\)/g, // Matches (number) and (numberg)
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /(?<!<span class="me">[^<]*\s)\d+(?=\s[a-zA-Z]+\b)/g,
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /#\d+/g, // #456987123
+        replacement: (match) => `<span class="${censorshipStyle}">${match}</span>`
+      },
+      {
+        regex: /\[#\d+\]/g, // [#420420]
+        replacement: (match) => `<span class="${censorshipStyle}">[#${match.match(/#\d+/)[0].slice(1)}]</span>`
+      },
+      {
+        regex: /(?=.*<span class="blue">)x(\d+)/g,
+        replacement: (_match, p1) => `x<span class="${censorshipStyle}">${p1}</span>`
+      }
+    ];
+
+    let censoredLine = formattedLine;
+    censorshipRules.forEach(rule => {
+      censoredLine = censoredLine.replace(rule.regex, rule.replacement);
+    });
+
+    return censoredLine;
   }
 
   function removeTimestamps(line) {
@@ -84,47 +167,44 @@ $(document).ready(function () {
     const lowerLine = line.toLowerCase();
 
     if (isRadioLine(line)) {
-        if (!characterName) {
-            return wrapSpan("radioColor", line);
-        }
-        return lowerLine.includes(characterName) ? wrapSpan("radioColor", line) : wrapSpan("radioColor2", line);
+      if (!characterName) {
+        return wrapSpan("radioColor", line);
+      }
+      return lowerLine.includes(characterName)
+        ? wrapSpan("radioColor", line)
+        : wrapSpan("radioColor2", line);
     }
 
-    if (line.includes("^")) {
-        const parts = line.split("^");
-        const beforeCaret = parts[0].trim();
-        const afterCaret = parts.slice(1).join("^").trim();
-        let result = "";
-        
-        if (beforeCaret) {
-            result += wrapSpan("white", beforeCaret);
-        }
-
-        if (afterCaret) {
-            result += wrapSpan("me", afterCaret);
-        }
-
-        return result;
+    if (lowerLine.includes("says [low]:")) {
+      if (!characterName) {
+        return wrapSpan("grey", line);
+      }
+      return lowerLine.includes(characterName)
+        ? wrapSpan("lightgrey", line)
+        : wrapSpan("grey", line);
     }
 
     if (lowerLine.includes("说:") || lowerLine.includes("大喊:")) {
-        if (!characterName) {
-            return wrapSpan("white", line);
-        }
-        return lowerLine.includes(characterName.toLowerCase()) ? wrapSpan("white", line) : wrapSpan("grey", line);
+      if (!characterName) {
+        return wrapSpan("white", line);
+      }
+      return lowerLine.includes(characterName)
+        ? wrapSpan("white", line)
+        : wrapSpan("lightgrey", line);
     }
 
-    
     return formatLine(line);
-}
+  }
 
   function isRadioLine(line) {
-    return /\*\* \[S: \d+ \| CH: .+\]/.test(line);
+    return /\[S: \d+ \| CH: .+\]/.test(line);
   }
 
   function formatLine(line) {
     const lowerLine = line.toLowerCase();
-    if (/\*\* \[[^\]]+ -> [^\]]+\]/.test(line)) return wrapSpan("depColor", line);
+    
+    if (lowerLine.includes("[ch: vts - 船舶交通服务]")) return formatVesselTraffic(line);
+    if (/\[[^\]]+ -> [^\]]+\]/.test(line)) return wrapSpan("depColor", line);
     if (line.startsWith("*")) return wrapSpan("me", line);
     if (line.startsWith(">")) return wrapSpan("ame", line);
     if (lowerLine.includes("密语:")) return handleWhispers(line);
@@ -161,16 +241,16 @@ $(document).ready(function () {
         lowerLine.includes("您支付了") ||
         lowerLine.includes("您收到了")
       )
-      return handleTransaction(line);
-      if (lowerLine.includes("^")) return saysme(line);
-      if (lowerLine.includes("you are now masked")) return wrapSpan("green", line);
-      if (lowerLine.includes("you have shown your inventory")) return wrapSpan("green", line);
-      if (lowerLine.includes("you are not masked anymore")) return wrapSpan("death", line);
-      if (lowerLine.includes("you're being robbed, use /arob")) return formatRobbery(line);
-      if (lowerLine.includes("您已将主手机设置为")) return formatPhoneSet(line);
-      if (lowerLine.includes("sms sent on")) return formatSmsSent(line);
-      if (lowerLine.includes("sms received on your")) return formatSmsReceived(line);
-      if (lowerLine.startsWith("you've cut")) return formatDrugCut(line);
+    return handleTransaction(line);
+    if (lowerLine.includes("you are now masked")) return wrapSpan("green", line);
+    if (lowerLine.includes("you have shown your inventory")) return wrapSpan("green", line);
+    if (lowerLine.includes("you are not masked anymore")) return wrapSpan("death", line);
+    if (lowerLine.includes("you're being robbed, use /arob")) return formatRobbery(line);
+    if (lowerLine.includes("您已将主手机设置为")) return formatPhoneSet(line);
+    if (lowerLine.includes("sms sent on")) return formatSmsSent(line);
+    if (lowerLine.includes("sms received on your")) return formatSmsReceived(line);
+    if (lowerLine.startsWith("you've cut")) return formatDrugCut(line);
+    if (lowerLine.includes("[property robbery]")) return formatPropertyRobbery(line);
 
     return replaceColorCodes(line);
   }
@@ -201,18 +281,32 @@ $(document).ready(function () {
   function handleTransaction(line) {
     return (
       '<span class="green">' +
-      line.replace(/(\$[\d,]+)/, '<span class="green">$1</span>') +
+    line.replace(/(\$\d+(?:,\d{3})*(?:\.\d{1,3})?)/g, '<span class="green">$1</span>') +
       "</span>"
     );
   }
 
   function formatInfo(line) {
-    const amountMatch = line.match(/\$(\d+)/);
-    const objectMatch = line.match(/from the (.+)$/i);
-    return amountMatch && objectMatch
-      ? `<span class="orange">信息:</span> <span class="white">You took</span> <span class="green">$${amountMatch[1]}</span> <span class="white">from the ${objectMatch[1]}</span>`
-      : line;
-  }
+    const moneyMatch = line.match(/\$(\d+)/);
+    const itemMatch = line.match(/took\s(.+?)\s\((\d+)\)\sfrom\s(the\s.+)\.$/i);
+
+    if (moneyMatch) {
+        const objectMatch = line.match(/from the (.+)\.$/i);
+        return objectMatch
+            ? `<span class="orange">Info:</span> <span class="white">You took</span> <span class="green">$${moneyMatch[1]}</span> <span class="white">from the ${objectMatch[1]}</span>.`
+            : line;
+    }
+
+    if (itemMatch) {
+        const itemName = itemMatch[1];
+        const itemQuantity = itemMatch[2];
+        const fromObject = itemMatch[3];
+
+        return `<span class="orange">Info:</span> <span class="white">You took</span> <span class="white">${itemName}</span> <span class="white">(${itemQuantity})</span> <span class="white">from ${fromObject}</span>.`;
+    }
+
+    return line;
+}
 
   function formatDrugLab() {
     return '<span class="orange">[药品工厂]</span> <span class="white">药品已经开始生产.</span>';
@@ -228,7 +322,7 @@ $(document).ready(function () {
 
   function formatIntercom(line) {
     return line.replace(
-      /\[(.*?) 无线电\]: (.*)/i,
+      /\[(.*?) intercom\]: (.*)/i,
       '<span class="blue">[$1 无线电]: $2</span>'
     );
   }
@@ -256,7 +350,7 @@ $(document).ready(function () {
   function colorMoneyLine(line) {
     return line
       .replace(
-        /向您的银行账户转账了 \$(\d+)/,
+        /向您的银行账户转账了 (\$\d+(?:,\d{3})*(?:\.\d{1,3})?)/,
         '<span class="white">向您的银行账户转账了 </span><span class="green">$$$1</span>'
       )
       .replace(
@@ -292,7 +386,7 @@ $(document).ready(function () {
     );
   }
 
-  function colorInfoLine(line) {
+ function colorInfoLine(line) {
     const datePattern = /\[信息\]:\s\[(\d{2})\/([A-Z]{3})\/(\d{4})\]\s(.+)/;
     if (datePattern.test(line)) {
       return applyDatePattern(line);
@@ -373,134 +467,116 @@ function formatSmsReceived(line) {
   function formatDrugCut(line) {
     const drugCutPattern = /You've cut (.+?) x(\d+) into x(\d+)\./i;
     const match = line.match(drugCutPattern);
-
+  
     if (match) {
-      const drugName = match[1];  // 药品名字 (e.g., Vicodin)
-      const firstAmount = match[2];  // 第一数量 (e.g., 250)
-      const secondAmount = match[3];  // 第二数量 (e.g., 328)
-
+      const drugName = match[1];
+      const firstAmount = match[2];
+      const secondAmount = match[3];
+  
       return (
         `<span class="white">You've cut </span>` +
         `<span class="blue">${drugName}</span>` +
-        `<span class="white"> x</span><span class="blue">${firstAmount}</span>` +
-        `<span class="white"> into x</span><span class="blue">${secondAmount}</span>` +
+        `<span class="blue"> x${firstAmount}</span>` +
+        `<span class="white"> into </span><span class="blue">x${secondAmount}</span>` +
         `<span class="blue">.</span>`
       );
     }
   }
 
+  function formatPropertyRobbery(line) {
+    const robberyPattern = /\[PROPERTY ROBBERY\](.*?)(\$[\d,]+)(.*)/;
+    const match = line.match(robberyPattern);
   
-  function addLineBreaksAndHandleSpans(text) {
-    const maxLineLength = 77;
-    let result = "";
-    let currentLineLength = 0;
-    let inSpan = false;
-    let currentSpan = "";
+    if (match) {
+      const textBeforeAmount = match[1];
+      const amount = match[2];
+      const textAfterAmount = match[3];
   
-    function addLineBreak() {
-      if (inSpan) {
-        result +=
-          '</span><br><span class="' +
-          currentSpan.match(/class="([^"]+)"/)[1] +
-          '">';
-      } else {
-        result += "<br>";
+      return `<span class="green">[PROPERTY ROBBERY]</span>${textBeforeAmount}<span class="green">${amount}</span>${textAfterAmount}`;
+    }
+  
+    return line;
+  }
+
+ function formatVesselTraffic(line) {
+    const vesselTrafficPattern = /\*\*\s*\[CH: VTS - 船舶交通服务\]/;
+
+    if (vesselTrafficPattern.test(line)) {
+      return `<span class="vesseltraffic">${line}</span>`;
+    }
+
+    return line;
+  }
+
+function addLineBreaksAndHandleSpans(text) {
+  const maxLineLength = 77;
+  let result = "";
+  let currentLineLength = 0;
+  let inSpan = false;
+  let currentSpan = "";
+
+  function addLineBreak() {
+    if (inSpan) {
+      result +=
+        '</span><br><span class="' +
+        currentSpan.match(/class="([^"]+)"/)[1] +
+        '">';
+    } else {
+      result += "<br>";
+    }
+    currentLineLength = 0;
+  }
+
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "<" && text.substr(i, 5) === "<span") {
+      let spanEnd = text.indexOf(">", i);
+      currentSpan = text.substring(i, spanEnd + 1);
+      i = spanEnd;
+      inSpan = true;
+      result += currentSpan;
+    } else if (text[i] === "<" && text.substr(i, 7) === "</span>") {
+      inSpan = false;
+      result += "</span>";
+      i += 6;
+    } else {
+      result += text[i];
+      currentLineLength++;
+
+      if (currentLineLength >= maxLineLength && text[i] === " ") {
+        addLineBreak();
       }
-      currentLineLength = 0;
-    }
-
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === "<" && text.substr(i, 5) === "<span") {
-        let spanEnd = text.indexOf(">", i);
-        currentSpan = text.substring(i, spanEnd + 1);
-        i = spanEnd;
-        inSpan = true;
-        result += currentSpan;
-      } else if (text[i] === "<" && text.substr(i, 7) === "</span>") {
-        inSpan = false;
-        result += "</span>";
-        i += 6;
-      } else {
-        result += text[i];
-        currentLineLength++;
-  
-        if (currentLineLength >= maxLineLength && text[i] === " ") {
-          addLineBreak();
-        }
-      }
-    }
-  
-    return result;
-  }
-  
-  function SaysAndMeLine(line) {
-    return (
-      '<span class="blue">[角色杀戮]</span> <span class="death">' +
-      line.slice(16) +
-      "</span>"
-    );
-  }
-
-
-
-
-
-
-
-
-  function cleanUp() {
-    $output.find(".generated").each(function () {
-      let html = $(this).html();
-      html = html.replace(/<br>\s*<br>/g, "<br>");
-      html = html.replace(/^<br>|<br>$/g, "");
-      html = html.replace(/<span[^>]*>\s*<\/span>/g, "");
-      $(this).html(html);
-    });
-    applyStyles();
-  }
-
-  function applyStyles() {
-    $(".generated:first").css({
-      "margin-top": "0",
-      "padding-top": "1px",
-    });
-    $(".generated:last").css({
-      "padding-bottom": "1px",
-      "margin-bottom": "0",
-    });
-    $(".generated").css("background-color", "transparent");
-
-    if (applyBackground) {
-      $(".generated").css("background-color", "#000000");
     }
   }
 
-  function cleanUp() {
-    $output.find(".generated").each(function () {
-      let html = $(this).html();
-      html = html.replace(/<br>\s*<br>/g, "<br>");
-      html = html.replace(/^<br>|<br>$/g, "");
-      html = html.replace(/<span[^>]*>\s*<\/span>/g, "");
-      $(this).html(html);
-    });
-    applyStyles();
-  }
-  
-  function applyStyles() {
-    $(".generated:first").css({
-      "margin-top": "0",
-      "padding-top": "1px",
-    });
-    $(".generated:last").css({
-      "padding-bottom": "1px",
-      "margin-bottom": "0",
-    });
-    $(".generated").css("background-color", "transparent");
-  
-    if (applyBackground) {
-      $(".generated").css("background-color", "#000000");
-    }
-  }
+  return result;
+}
 
-  processOutput();
+function cleanUp() {
+  $output.find(".generated").each(function () {
+    let html = $(this).html();
+    html = html.replace(/<br>\s*<br>/g, "<br>");
+    html = html.replace(/^<br>|<br>$/g, "");
+    html = html.replace(/<span[^>]*>\s*<\/span>/g, "");
+    $(this).html(html);
+  });
+  applyStyles();
+}
+
+function applyStyles() {
+  $(".generated:first").css({
+    "margin-top": "0",
+    "padding-top": "1px",
+  });
+  $(".generated:last").css({
+    "padding-bottom": "1px",
+    "margin-bottom": "0",
+  });
+  $(".generated").css("background-color", "transparent");
+
+  if (applyBackground) {
+    $(".generated").css("background-color", "#000000");
+  }
+}
+
+processOutput();
 });
